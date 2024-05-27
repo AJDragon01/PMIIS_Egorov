@@ -105,14 +105,6 @@ def find_best_student(students):
 # Основной код
 students = input_students()
 best_student = find_best_student(students)
-if best_student:
-    print(f"Студент с лучшей успеваемостью: {best_student.name}")
-    print("Предметы и оценки:")
-    for subject, grade_info in best_student.grades.items():
-        print(f"{subject}: {grade_info['grade']} ({grade_info['exam_date']}, {grade_info['teacher']})")
-else:
-    print("Нет данных о студентах.")
-    
 conn = sqlite3.connect('students.db')
 c = conn.cursor()
 c.execute("SELECT students.name, grades.subject, grades.grade, grades.exam_date, grades.teacher FROM students INNER JOIN grades ON students.id = grades.student_id WHERE students.id = ?", (best_student.id,))
