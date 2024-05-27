@@ -1,5 +1,5 @@
 import sqlite3
-
+import os
 
 
 def count_digits(num1, num2):
@@ -26,7 +26,7 @@ def create_db():
 
 
 class Student:
-    def __init__(self, name, birth_date, id):
+    def __init__(self, name, birth_date, id=None):
         self.name = name
         self.birth_date = birth_date
         self.id = id
@@ -40,30 +40,51 @@ class Student:
         }
 
 def input_students():
-    create_db()  # Инициализация базы данных
-    conn = sqlite3.connect('students.db')
-    c = conn.cursor()
-    num_students = int(input("Введите количество студентов: "))
-    students = []
-    for i in range(num_students):
-        name = input(f"Введите ФИО студента {i+1}: ")
-        birth_date = input(f"Введите дату рождения студента {i+1} (гггг-мм-дд): ")
-        c.execute("INSERT INTO students (name, birth_date) VALUES (?, ?)", (name, birth_date))
-        student_id = c.lastrowid
-        student = Student(name, birth_date, student_id)
-        num_grades = int(input(f"Введите количество предметов для студента {i+1}: "))
-        for j in range(num_grades):
-            subject = input(f"Введите название предмета {j+1}: ")
-            exam_date = input(f"Введите дату экзамена для предмета {j+1} (гггг-мм-дд): ")
-            teacher = input(f"Введите ФИО преподавателя для предмета {j+1}: ")
-            grade = int(input(f"Введите оценку для предмета {j+1}: "))
-            c.execute("INSERT INTO grades (student_id, subject, exam_date, teacher, grade) VALUES (?, ?, ?, ?, ?)",
-                      (student_id, subject, exam_date, teacher, grade))
-            student.add_grade(subject, exam_date, teacher, grade)
-        students.append(student)
-        conn.commit()
-    conn.close()
-    return students
+    choice = input("Введите 1 для ввода данных вручную или 2 для чтения из базы данных: ")
+
+    if choice == '1':
+        # Ввод данных вручную
+        students = []
+        num_students = int(input("Введите количество студентов: "))
+        for i in range(num_students):
+            name = input(f"Введите ФИО студента {i+1}: ")
+            birth_date = input(f"Введите дату рождения студента {i+1} (гггг-мм-дд): ")
+            student = Student(name, birth_date)
+            num_grades = int(input(f"Введите количество предметов для студента {i+1}: "))
+            for j in range(num_grades):
+                subject = input(f"Введите название предмета {j+1}: ")
+                exam_date = input(f"Введите дату экзамена для предмета {j+1} (гггг-мм-дд): ")
+                teacher = input(f"Введите ФИО преподавателя для предмета {j+1}: ")
+                grade = int(input(f"Введите оценку для предмета {j+1}: "))
+                student.add_grade(subject, exam_date, teacher, grade)
+            students.append(student)
+        return students
+
+    elif choice == '2':
+        # Чтение данных из базы данных
+        if os.path.exists('students.db'):
+            conn = sqlite3.connect('students.db')
+            c = conn.cursor()
+            c.execute("SELECT * FROM students")
+            students_data = c.fetchall()
+            students = []
+            for student_data in students_data:
+                student_id, name, birth_date = student_data
+                student = Student(name, birth_date, student_id)
+                c.execute("SELECT subject, exam_date, teacher, grade FROM grades WHERE student_id = ?", (student_id,))
+                grades_data = c.fetchall()
+                for grade_data in grades_data:
+                    subject, exam_date, teacher, grade = grade_data
+                    student.add_grade(subject, exam_date, teacher, grade)
+                students.append(student)
+            conn.close()
+            return students
+        else:
+            print("База данных не найдена. Создайте базу данных или введите данные вручную.")
+            return []
+    else:
+        print("Неверный выбор. Попробуйте еще раз.")
+        return input_students()
 
 def find_best_student(students):
     best_student = None
@@ -84,6 +105,14 @@ def find_best_student(students):
 # Основной код
 students = input_students()
 best_student = find_best_student(students)
+if best_student:
+    print(f"Студент с лучшей успеваемостью: {best_student.name}")
+    print("Предметы и оценки:")
+    for subject, grade_info in best_student.grades.items():
+        print(f"{subject}: {grade_info['grade']} ({grade_info['exam_date']}, {grade_info['teacher']})")
+else:
+    print("Нет данных о студентах.")
+    
 conn = sqlite3.connect('students.db')
 c = conn.cursor()
 c.execute("SELECT students.name, grades.subject, grades.grade, grades.exam_date, grades.teacher FROM students INNER JOIN grades ON students.id = grades.student_id WHERE students.id = ?", (best_student.id,))
