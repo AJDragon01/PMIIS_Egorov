@@ -56,6 +56,7 @@ def populate_database():
     conn.commit()
     conn.close()
 
+
 if __name__ == "__main__":
     populate_database()
     print("База данных успешно заполнена тестовыми данными.")

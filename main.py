@@ -111,6 +111,7 @@ c.execute("SELECT students.name, grades.subject, grades.grade, grades.exam_date,
 grades = c.fetchall()
 conn.close()
 
+
 print(f"Студент с лучшей успеваемостью: {best_student.name}")
 print("Предметы и оценки:")
 for grade in grades:
